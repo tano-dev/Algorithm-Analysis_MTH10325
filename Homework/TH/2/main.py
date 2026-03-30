@@ -1,18 +1,4 @@
 # 1
-
-# Cho một số tự nhiên x và A là 1 mảng N số tự nhiên đôi một khác nhau. Hãy
-# thiết kế một thuật toán có độ phức tạp OpN log N q theo thời gian để kiểm tra xem
-# có tồn tại pi, jq sao cho Aris ` Arjs “ x.
-# 1. Input:N, A, x.
-# 2. Output: pi, jq.
-# Trong đó cho x “ 50.
-# • N tăng dần theo thứ tự 10, 20, 30, . . . , 1000.
-# • A được tạo ngẫu nhiên sao cho Aris P r1, 2, . . . , 10000s, Aris ‰ Arjs @i, j P
-# t1, . . . , 1000u.
-# • Chứng minh rằng thuật toán đưa ra thỏa yêu cầu đề bài.
-# • Với mỗi N P t10, 20, . . . , 1000u, chọn x “ 50 tạo ngẫu nhiên A và tính thời gian
-# trung bình để kiểm tra Dpi, jq : Aris ` Arjs “ x. Gọi giá trị đó là T pN q. So sánh
-# kết quả thực nghiệm và kết quả lý thuyết: T pN q “ OpN log N q.
 import time
 import numpy as np
 import matplotlib.pyplot as plt
@@ -78,8 +64,10 @@ def algorithm(N, A, x, method = 1):
             right -= 1
 
     return None
+
+
 def measure_time_numpy(N, x, num_trials=100, method=1):
-    total_time = 0.0
+    total_time = 0
     for _ in range(num_trials):
         # Tạo mảng numpy ngẫu nhiên gồm các phần tử khác nhau đôi một (replace=False)
         A = np.random.choice(np.arange(1, 10001), size=N, replace=False)
@@ -92,9 +80,9 @@ def measure_time_numpy(N, x, num_trials=100, method=1):
         
     return total_time / num_trials
 
-def run():
+def test():
     x = 50
-    N_values = np.arange(10, 1001, 10)
+    N = np.arange(10, 1001, 10)
     
     plt.figure(figsize=(10, 6))
     colors = {1: 'blue', 2: 'green'}
@@ -102,26 +90,26 @@ def run():
     
     # Tính đường lý thuyết 1 lần để làm mốc
     # (Dùng một lần chạy nháp để lấy hằng số c tỷ lệ)
-    dummy_times = [measure_time_numpy(N, x, num_trials=5, method=1) for N in N_values]
-    c = dummy_times[-1] / (N_values[-1] * np.log(N_values[-1]))
-    theoretical_times = c * N_values * np.log(N_values)
-    plt.plot(N_values, theoretical_times, linestyle='--', color='red', label=r'Lý thuyết $O(N \log N)$')
+    plot_time = [measure_time_numpy(n, x, num_trials=5, method=1) for n in N]
+    c = plot_time[-1] / (N[-1] * np.log(N[-1]))
+    nlogn_time = c * N * np.log(N)
+    plt.plot(N, nlogn_time, linestyle='--', color='red', label=r'Lý thuyết $O(N \log N)$')
 
     for method in [1, 2]:
         empirical_times = []
-        print(f"\n--- Dang do thoi gian cho {labels[method]} ---")
-        for N in N_values:
-            avg_time = measure_time_numpy(N, x, num_trials=100, method=method)
+        print(f"\nRunning {labels[method]}")
+        for n in N:
+            avg_time = measure_time_numpy(n, x, num_trials=100, method=method)
             empirical_times.append(avg_time)
-            # print(f"N: {N}, Average Time: {avg_time:.8f} seconds")
+            # print(f"N: {n}, Average Time: {avg_time:.8f} seconds")
             
-        plt.plot(N_values, empirical_times, marker='o', markersize=3, 
+        plt.plot(N, empirical_times, marker='o', markersize=3, 
                  color=colors[method], label=f'Thực nghiệm ({labels[method]})')
 
-    plt.title('So sánh thời gian chạy: Quick Sort vs Merge Sort')
+    plt.title('Quick Sort & Merge Sort vs O(N log N)')
     plt.xlabel('N')
-    plt.ylabel('Thời gian (seconds)')
+    plt.ylabel('time (s)')
     plt.legend()
     plt.grid(True, alpha=0.5)
     plt.show()
-run()
+test()
