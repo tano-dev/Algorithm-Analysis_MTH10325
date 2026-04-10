@@ -1,107 +1,112 @@
-# 1
-import time
+import math
 import numpy as np
-import matplotlib.pyplot as plt
 
-def quick_sort(arr):
-    if len(arr) <= 1:
-        return arr
-
-    pivot_val = arr[len(arr) // 2][0]
-    left = [x for x in arr if x[0] < pivot_val]
-    middle = [x for x in arr if x[0] == pivot_val]
-    right = [x for x in arr if x[0] > pivot_val]
-
-    return quick_sort(left) + middle + quick_sort(right)
-def merge_sort(arr):
-    if len(arr) <= 1:
-        return arr
-
-    mid = len(arr) // 2
-    left_half = merge_sort(arr[:mid])
-    right_half = merge_sort(arr[mid:])
-
-    return merge(left_half, right_half)
-def merge(left, right):
-    result = []
-    i = j = 0
-
-    while i < len(left) and j < len(right):
-        if left[i][0] < right[j][0]:
-            result.append(left[i])
-            i += 1
-        else:
-            result.append(right[j])
-            j += 1
-
-    result.extend(left[i:])
-    result.extend(right[j:])
+def estimate_complexity(f, a, b):
+    n_vals = []
+    fn_vals = []
+    log_n = []
+    log_fn = []
     
-    return result
-def algorithm(N, A, x, method = 1):
-    A_indexed = [(A[i], i) for i in range(N)]
-    
-    if method == 1:
-        sorted_A = quick_sort(A_indexed)
-    else:
-        sorted_A = merge_sort(A_indexed)
-
-    left, right = 0, N - 1
-    
-    while left < right:
-        current_sum = sorted_A[left][0] + sorted_A[right][0]       
-        if current_sum == x:
-            return (sorted_A[left][1], sorted_A[right][1])
-        elif current_sum < x:
-            left += 1
-        else:
-            right -= 1
-    return None
-
-
-def calc_time(N, x, t=100, method=1):
-    total_time = 0
-    for _ in range(t):
-        A = np.random.choice(np.arange(1, 10001), size=N, replace=False)
+    # BƯỚC 1: Lấy dữ liệu và chuyển sang dạng Logarit
+    for n in range(a, b + 1):
         
-        start_time = time.perf_counter()
-        algorithm(N, A, x, method=method)
-        end_time = time.perf_counter()
-        
-        total_time += (end_time - start_time)
-        
-    return total_time / t
-
-def test():
-    x = 50
-    N = np.arange(10, 1001, 10)
-    
-    plt.figure(figsize=(10, 6))
-    colors = {1: 'blue', 2: 'green'}
-    labels = {1: 'Quick Sort', 2: 'Merge Sort'}
-    
-    plot_time = [calc_time(n, x, t=5, method=1) for n in N]
-    c = plot_time[-1] / (N[-1] * np.log(N[-1]))
-    nlogn_time = c * N * np.log(N)
-    plt.plot(N, nlogn_time, linestyle='--', color='red', label=r'$O(N \log N)$')
-
-    for method in [1, 2]:
-        test_times = []
-        print(f"\nRunning {labels[method]}")
-        for n in N:
-            avg_time = calc_time(n, x, t=100, method=method)
-            test_times.append(avg_time)
-            # print(f"N = {n}, avg_time: {avg_time:.8f}")
+            val = f(n)
+            abs_val = abs(val) # Xét trị tuyệt đối cho độ lớn của hàm
             
-        plt.plot(N, test_times, marker='o', markersize=3, color=colors[method], label=f'{labels[method]}')
+            if abs_val > 0:
+                # Xử lý các số cực lớn (vd n^n) để tránh lỗi tràn bộ nhớ (Overflow)
+                if isinstance(abs_val, int) and abs_val > 1e250:
+                    l_fn = abs_val.bit_length() * math.log(2)
+                else:
+                    l_fn = math.log(abs_val)
+                    
+                n_vals.append(n)
+                fn_vals.append(val)
+                log_n.append(math.log(n))
+                log_fn.append(l_fn)
 
-    plt.title('Quick Sort & Merge Sort vs O(N log N)')
-    plt.xlabel('N')
-    plt.ylabel('time (s)')
-    plt.legend()
-    plt.show()
-test()
 
+    if len(n_vals) < 2:
+        print("giá trị n quá nhỏ hoặc hàm trả về giá trị không hợp lệ để ước lượng độ phức tạp.")
+        return
 
-#2
+    # Lọc đường bao trên (Upper Envelope) để tìm xu hướng thật sự
+    # Kỹ thuật này giúp loại bỏ nhiễu khi hàm dao động lên xuống do cos(n)
+    env_log_n, env_log_fn = [], []
+    max_val = -float('inf')
+    for ln, lfn in zip(log_n, log_fn):
+        if lfn >= max_val:
+            max_val = lfn
+            env_log_n.append(ln)
+            env_log_fn.append(lfn)
 
+    # Chia đôi dữ liệu bao trên để kiểm tra xem hệ số góc có ổn định không
+    # Nếu hệ số góc tăng vọt -> Hàm tăng phi đa thức (như hàm mũ n^n)
+    mid = len(env_log_n) // 2
+    if mid >= 2:
+        slope1 = np.polyfit(env_log_n[:mid], env_log_fn[:mid], 1)[0]
+        slope2 = np.polyfit(env_log_n[mid:], env_log_fn[mid:], 1)[0]
+        if slope2 - slope1 > 0.5:
+            print("Ko có dạng O(n^a)")
+            print("-" * 60)
+            return
+
+    # Tính độ dốc trung bình của toàn bộ đường bao trên
+    overall_slope = np.polyfit(env_log_n, env_log_fn, 1)[0]
+    alpha = int(round(overall_slope))
+
+    if alpha == 0:
+        print("f(n) ~= O(1)")
+    elif alpha == 1:
+        print("f(n) ~= O(n)")
+    else:
+        print(f"f(n) ~= O(n^{alpha})")
+
+    # BƯỚC 2: Thế f(n) và n để giải hệ phương trình tìm a_0, a_1,..., a_alpha
+        # np.polyfit(X, Y, deg) trả về hệ số đa thức theo thứ tự: [a_alpha, ..., a_1, a_0]
+        coeffs = np.polyfit(n_vals, fn_vals, alpha)
+        
+        # Đảo ngược mảng để in đúng thứ tự yêu cầu của đề: a_0, a_1, ..., a_alpha
+        coeffs_reversed = coeffs[::-1]
+        
+        # Làm tròn hệ số để hiển thị sạch sẽ (khử sai số dấu phẩy động 0.0000001)
+        coeffs_rounded = [round(c, 4) for c in coeffs_reversed]
+        
+        print(" => Các hệ số [a_0, a_1, ..., a_alpha]:")
+        str_coeffs = [f"a_{i} = {c}" for i, c in enumerate(coeffs_rounded)]
+        print("    " + ", ".join(str_coeffs))
+        
+        # In ra dạng đa thức trực quan
+        poly_terms = []
+        for i, c in enumerate(coeffs_rounded):
+            if c != 0:
+                if i == 0: poly_terms.append(f"{c}")
+                elif i == 1: poly_terms.append(f"{c}n")
+                else: poly_terms.append(f"{c}n^{i}")
+        
+        poly_str = " + ".join(poly_terms).replace("+ -", "- ")
+        print(f" => Hàm xấp xỉ: f(n) ≈ {poly_str}")
+
+# ==========================================
+# KIỂM TRA CÁC TRƯỜNG HỢP (TEST CASES)
+# ==========================================
+def func_a(n): return n**2
+def func_b(n): return n**3 + math.cos(n) * (n**4)
+def func_c(n): return n**n
+def func_d(n): return n**3 + n**2 + n + 1
+
+if __name__ == "__main__":
+    a, b = 10, 1000
+    print(f"--- KIỂM TRA VỚI n chạy từ {a} đến {b} ---\n")
+    
+    print("a) f(n) = n^2")
+    estimate_complexity(func_a, a, b)
+    
+    print("b) f(n) = n^3 + cos(n).n^4")
+    estimate_complexity(func_b, a, b)
+    
+    print("c) f(n) = n^n")
+    estimate_complexity(func_c, a, b)
+    
+    print("d) f(n) = n^3 + n^2 + n + 1")
+    estimate_complexity(func_d, a, b)
