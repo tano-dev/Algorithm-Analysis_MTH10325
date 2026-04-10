@@ -39,19 +39,15 @@ findN_Alpha(func_d)
 
 
 # Bài 2
-
-
-
 def listRNG(N):
     n = []
     for _ in range(N):
         n.append(random.randint(0, 9))
 
-    # Remove leading zero
     while n[0] == 0:
         n[0] = random.randint(1, 9)
     return n
-# 2a
+
 def to_list(n):
     l = []
     while n:
@@ -60,14 +56,31 @@ def to_list(n):
 
     return l
 
-
 def list_to_number(digits):
     number = 0
     for digit in digits:
         number = number * 10 + digit
     return number
 
+def plot_time_complexity(T, bigO_line, bigO_label, title=''):
 
+    plt.figure(figsize=(8, 5))
+    ax = plt.gca()
+    ax2 = ax.twinx()
+    ax.set_xlabel('N')
+
+    line1, = ax.plot(bigO_line, label=bigO_label, color='r', ls='--', alpha=0.8)
+    ax.set_ylabel('Độ phức tạp thời gian', color=line1.get_color())
+    line2, = ax2.plot(T, label='T(N)', color='C0', alpha=0.8)
+    ax2.set_ylabel('Thời gian thực hiện (s)', color=line2.get_color())
+    ax.legend(handles=[line1, line2])
+
+    if title:
+        plt.title(title)
+
+    plt.show()
+    
+# 2a
 def classic_multiply(A, B):
     len_a, len_b = len(A), len(B)
     res = [0] * (len_a + len_b)
@@ -102,36 +115,16 @@ for k in range(13):
     print(f'{k = }, took {duration}s')
     T_a.append(duration)
 
-def plot_time_complexity(T, bigO_line, bigO_label, title=''):
 
-    plt.figure(figsize=(8, 5))
-    ax = plt.gca()
-    ax2 = ax.twinx()
-    ax.set_xlabel('N')
-
-    line1, = ax.plot(bigO_line, label=bigO_label, color='r', ls='--', alpha=0.8)
-    ax.set_ylabel('Độ phức tạp thời gian', color=line1.get_color())
-    line2, = ax2.plot(T, label='T(N)', color='C0', alpha=0.8)
-    ax2.set_ylabel('Thời gian thực hiện (s)', color=line2.get_color())
-    ax.legend(handles=[line1, line2])
-
-    if title:
-        plt.title(title)
-
-    plt.show()
-    
     
 bigO_line_a = list(map(lambda x: x**2, Ns_a))
-plot_time_complexity(T_a, bigO_line_a, bigO_label='$O(N^2)$',title=f'So sánh thuật toán của câu 2a với $O(N^2)$')
-
-
+plot_time_complexity(T_a, bigO_line_a, bigO_label='$O(N^2)$',title=f'Comparison 2a vs $O(N^2)$')
 
 # 2b
 def split(n: int):
     return divmod(n, 10**(numlength(n)//2))
 
 def numlength(n: int):
-    """Return length of number"""
     l = 0
     while n:
         n //= 10
@@ -192,24 +185,28 @@ for k in range(13):
     T_b.append(duration)
 
 bigO_line_b = list(map(lambda x: x**log2(3) , Ns_b))
-plot_time_complexity(T_b, bigO_line_b, bigO_label='$O(N^{\log{3}})$',title='So sánh thuật toán của câu 2b với $O(N^{\log{3}})$')
+plot_time_complexity(T_b, bigO_line_b, bigO_label='$O(N^{\log{3}})$',title='Comparison 2b vs $O(N^{\log{3}})$')
 
 
 
 # So sánh 2 phương pháp
-plt.figure(figsize=(12, 8))
-ax = plt.gca()
-ax2 = ax.twinx()
-ax.set_xlabel('N')
+# Tính hệ số C để chuẩn hóa đường lý thuyết về cùng đơn vị thời gian (giây)
+C_a = T_a[-1] / bigO_line_a[-1]
+C_b = T_b[-1] / bigO_line_b[-1]
 
-line1, = ax.plot(bigO_line_a, label='$O(N^2)$', color='r', ls='--', alpha=0.8)
-line2, = ax.plot(bigO_line_b, label='$O(N^{\log{3}})$', color='C0', ls='--', alpha=0.8)
-line3, = ax2.plot(T_a, label='T(N) câu a', color='r', alpha=0.8)
-line4, = ax2.plot(T_b, label='T(N) câu b', color='C0', alpha=0.8)
+bigO_line_a_scaled = [x * C_a for x in bigO_line_a]
+bigO_line_b_scaled = [x * C_b for x in bigO_line_b]
 
-ax2.xaxis.set_visible(False)
-ax.legend(handles=[line1, line3, line2, line4])
+plt.figure(figsize=(8, 5))
+plt.plot(Ns_a, bigO_line_a_scaled, label='$O(N^2)$', color='red', ls='--', alpha=0.5)
+plt.plot(Ns_a, T_a, label='$T_a$ (Classical)', color='red', marker='o')
 
-plt.tight_layout()
-plt.suptitle(f'So sánh kết quả hai phương pháp')
+plt.plot(Ns_a, bigO_line_b_scaled, label='$O(N^{\log_2{3}})$', color='blue', ls='--', alpha=0.5)
+plt.plot(Ns_a, T_b, label='$T_b$ (Karatsuba)', color='blue', marker='s')
+
+plt.xlabel('N')
+plt.ylabel('s')
+plt.legend()
+plt.title('Comparison of Classical and Karatsuba Multiplication (Normalized)')
+plt.grid(True, alpha=0.3)
 plt.show()
