@@ -1,39 +1,22 @@
-import math
-import matplotlib.pyplot as plt
-import numpy as np
 import time
-import random
-import heapq
-import sys
-from time import perf_counter
-from math import log2
+import matplotlib.pyplot as plt
 
-# Bai 1
-def find_kth_char(n, k):
-    # Bước 1: Khởi tạo mảng độ dài các chuỗi từ f_0 đến f_n
+def find_k_char(n, k):
     L = [0] * (n + 1)
     L[0] = 3
     if n > 0:
         L[1] = 3
         for i in range(2, n + 1):
             L[i] = L[i-1] + L[i-2]
-            
-    # Kiểm tra k có hợp lệ không (tùy chọn)
-    if k < 1 or k > L[n]:
-        return "k nằm ngoài phạm vi chiều dài của chuỗi!"
 
-    # Bước 2: Đệ quy tìm kiếm (không tạo chuỗi mới)
     def search(n_curr, k_curr):
-        # Base cases
         if n_curr == 0:
-            return "abc"[k_curr - 1] # -1 vì index trong Python bắt đầu từ 0
+            return "abc"[k_curr - 1] 
         if n_curr == 1:
             return "def"[k_curr - 1]
             
-        # Chiều dài của nửa đầu tiên (tức là f_{n-1})
         len_first_half = L[n_curr - 1]
         
-        # Quyết định rẽ nhánh
         if k_curr <= len_first_half:
             return search(n_curr - 1, k_curr)
         else:
@@ -41,10 +24,34 @@ def find_kth_char(n, k):
 
     return search(n, k)
 
-# Test thử nghiệm
-n = 4
-k = 2
-print(f"Ký tự thứ {k} của chuỗi f_{n} là '{find_kth_char(n, k)}'")
+n_values = list(range(1, 2001, 50)) # Từ 1 đến 2000 với bước 50 để tránh thời gian quá lâu
+avg_times = []
+num_trials = 100 
 
-# Thử với n rất lớn (Code cũ của bạn sẽ bị treo, code này chạy chớp mắt)
-print(f"Ký tự thứ 100 của chuỗi f_50 là '{find_kth_char(50, 100)}'")
+for n in n_values:
+    total_time = 0
+    k_test = 2 
+    
+    for _ in range(num_trials):
+        start_time = time.perf_counter()
+        find_k_char(n, k_test)
+        end_time = time.perf_counter()
+        
+        total_time += (end_time - start_time)
+        
+    avg_times.append(total_time / num_trials)
+
+C = avg_times[-1] / n_values[-1]
+bigO_line = [C * n for n in n_values]
+
+# Vẽ đồ thị
+plt.figure(figsize=(10, 6))
+plt.plot(n_values, avg_times, marker='o', color='blue', label='find_kth_char()')
+plt.plot(n_values, bigO_line, linestyle='--', color='red', label=r'$O(n)$')
+
+plt.title('Average Time Complexity')
+plt.xlabel('n')
+plt.ylabel('s')
+plt.legend()
+plt.grid(True)
+plt.show()
